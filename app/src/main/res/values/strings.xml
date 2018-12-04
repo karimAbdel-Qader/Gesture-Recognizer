@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Gesturize</string>
+    <string name="hello">Please enter gesture name</string>
+</resources>
