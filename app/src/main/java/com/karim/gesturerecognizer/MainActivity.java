@@ -49,14 +49,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private EditText input;
     private List<String> fileList = new ArrayList<String>();
     private AlertDialog.Builder alertAdd,alertStart,alertRecording,alertDone;
-    private ArrayList <String> acData = new ArrayList<String>();
     private ArrayList <Float> acXData = new ArrayList<Float>();
     private ArrayList <Float> acYData = new ArrayList<Float>();
     private ArrayList <Float> acZData = new ArrayList<Float>();
     private ArrayList <Float> gXData = new ArrayList<Float>();
     private ArrayList <Float> gYData = new ArrayList<Float>();
     private ArrayList <Float> gZData = new ArrayList<Float>();
-    private ArrayList <String> gData = new ArrayList<String>();
     private AlertDialog alert;
     private String x = "testing";
     SwipeController swipeController = null;
@@ -85,19 +83,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         File sdCard = Environment.getExternalStorageDirectory();
 
-        svm.scale("-l -1 -u 1 "+sdCard.getAbsolutePath() +  "/Gestures/AG.data", sdCard.getAbsolutePath() + "/Gestures/ac_scaled.data");
+        /*svm.scale("-l -1 -u 1 "+sdCard.getAbsolutePath() +  "/Gestures/AG.data", sdCard.getAbsolutePath() + "/Gestures/ac_scaled.data");
         Log.d(TAG, "cWriter: scaled");
 
-        svm.train("-t 0 "  + sdCard.getAbsolutePath() + "/Gestures/ac_scaled.data " + sdCard.getAbsolutePath() + "/Gestures/modelsvm");
+        svm.train("-t 2 -g 0.000000372 "  + sdCard.getAbsolutePath() + "/Gestures/ac_scaled.data " + sdCard.getAbsolutePath() + "/Gestures/modelsvm");
         Log.d(TAG, "cWriter: trained");
 
-       // svm.scale("-l -1 -u 1 "+ sdCard.getAbsolutePath() +  "/Gestures/ltest1.data", sdCard.getAbsolutePath() + "/Gestures/sq_scaled");
-       // svm.predict(sdCard.getAbsolutePath() + "/Gestures/sq_scaled " + sdCard.getAbsolutePath() + "/Gestures/modelsvm " + sdCard.getAbsolutePath() + "/Gestures/resultsvmS");
-       // Log.d(TAG, "cWriter: square prediction accuracy ");
-
-        svm.scale("-l -1 -u 1 "+ sdCard.getAbsolutePath() +  "/Gestures/ctest1.data", sdCard.getAbsolutePath() + "/Gestures/c_scaled");
+        svm.scale("-l -1 -u 1 "+ sdCard.getAbsolutePath() +  "/Gestures/Test.data", sdCard.getAbsolutePath() + "/Gestures/c_scaled");
         svm.predict(sdCard.getAbsolutePath() + "/Gestures/c_scaled " + sdCard.getAbsolutePath() + "/Gestures/modelsvm " + sdCard.getAbsolutePath() + "/Gestures/resultsvmC");
-        Log.d(TAG, "cWriter: circle prediction accuracy");
+        Log.d(TAG, "cWriter: circle prediction accuracy");*/
         //////
     }
 
@@ -241,8 +235,21 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             aData =aData + " " + index + ":" +gZData.get(i);
             index++;
         }
+        acXData.clear();
+        acYData.clear();
+        acZData.clear();
+        gXData.clear();
+        gYData.clear();
+        gZData.clear();
         aData = aData + "\n";
-        cWriter("AG.data",aData);
+        if(input==null)
+            cWriter("testing.data",aData);
+        else {
+            if (input.getText() + "" == "")
+                cWriter("testing.data", aData);
+            else
+                cWriter(input.getText() + ".data", aData);
+        }
     }
 
 
@@ -375,7 +382,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         try {
 
             File sdCard = Environment.getExternalStorageDirectory();
-            File dir = new File(sdCard.getAbsolutePath() + "/Gestures" + "/" + input.getText());
+            File dir;
+            if(input==null)
+            dir = new File(sdCard.getAbsolutePath() + "/Gestures/Testing");
+            else
+                dir = new File(sdCard.getAbsolutePath() + "/Gestures" + "/" + input.getText());
             Boolean dirsMade = dir.mkdir();
             //Log.d(TAG, "filer: " + dirsMade.toString());
 
@@ -403,6 +414,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             e.printStackTrace();
 
         }
+        //svmTest();
     }
 
     @Override
@@ -416,13 +428,34 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     }
 
-    public void add(View view) throws InterruptedException {
-        alertAdd = new AlertDialog.Builder(this);
-        alertDialog();
+    public void add(View view) {
+        svmTest();
+        /*alertAdd = new AlertDialog.Builder(this);
+        alertDialog();*/
     }
 
     protected void onDestroy(){
         super.onDestroy();
         sensorManager.unregisterListener(this);
+    }
+
+    public void test(View view) {
+        alertStart = new AlertDialog.Builder(this);
+        alertDialog2();
+    }
+
+    private void svmTest() {
+
+        File sdCard = Environment.getExternalStorageDirectory();
+
+        svm.scale("-l -1 -u 1 "+sdCard.getAbsolutePath() +  "/Gestures/AG.data", sdCard.getAbsolutePath() + "/Gestures/Testing/ag_scaled.data");
+        svm.scale("-l -1 -u 1 "+ sdCard.getAbsolutePath() +  "/Gestures/Testing/testing.data", sdCard.getAbsolutePath() + "/Gestures/Testing/T_scaled");
+        Log.d(TAG, "cWriter: scaled");
+
+        svm.train("-t 0 "  + sdCard.getAbsolutePath() + "/Gestures/Testing/ag_scaled.data " + sdCard.getAbsolutePath() + "/Gestures/Testing/modelsvm");
+        Log.d(TAG, "cWriter: trained");
+
+        svm.predict(sdCard.getAbsolutePath() + "/Gestures/Testing/T_scaled " + sdCard.getAbsolutePath() + "/Gestures/Testing/modelsvm " + sdCard.getAbsolutePath() + "/Gestures/Testing/resultsvmC");
+        Log.d(TAG, "cWriter: circle prediction accuracy");
     }
 }
