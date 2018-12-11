@@ -64,6 +64,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private long tDelta ;
     private double elapsedSeconds ;
     private LibSVM svm;
+    private int trials = 5;
+    private Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+    private int sofar =0;
 
 
     @Override
@@ -79,20 +82,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setGestureDataAdapter(root);
         setupRecyclerView();
         Log.d(TAG, "External storage: " + Environment.getExternalStorageState());
-/////
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS,1);
+        intent.putExtra("android.speech.extra.DICTATION_MODE",true);
 
-        File sdCard = Environment.getExternalStorageDirectory();
-
-        /*svm.scale("-l -1 -u 1 "+sdCard.getAbsolutePath() +  "/Gestures/AG.data", sdCard.getAbsolutePath() + "/Gestures/ac_scaled.data");
-        Log.d(TAG, "cWriter: scaled");
-
-        svm.train("-t 2 -g 0.000000372 "  + sdCard.getAbsolutePath() + "/Gestures/ac_scaled.data " + sdCard.getAbsolutePath() + "/Gestures/modelsvm");
-        Log.d(TAG, "cWriter: trained");
-
-        svm.scale("-l -1 -u 1 "+ sdCard.getAbsolutePath() +  "/Gestures/Test.data", sdCard.getAbsolutePath() + "/Gestures/c_scaled");
-        svm.predict(sdCard.getAbsolutePath() + "/Gestures/c_scaled " + sdCard.getAbsolutePath() + "/Gestures/modelsvm " + sdCard.getAbsolutePath() + "/Gestures/resultsvmC");
-        Log.d(TAG, "cWriter: circle prediction accuracy");*/
-        //////
     }
 
     private void textToSpeech() {
@@ -173,39 +166,44 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     }
 
-    private void processResults (String command){
-        command = command.toLowerCase();
-        if((command.indexOf("start") != -1|| command.indexOf("stored") != -1 || command.indexOf("stock") != -1|| command.indexOf("stork") != -1)
-                && flag == false){
-            tStart = System.currentTimeMillis();
-            alert.dismiss();
-            mySpeechRecognizer.stopListening();
-            flag = true;
-            alertRecording = new AlertDialog.Builder(this);
-            alertRecording.setTitle("Recording...");
-            alertRecording.setMessage("Say Stop to stop recording");
-            alert = alertRecording.create();
-            alert.show();
-            listen();
-            record();
-        }
+    private void processResults (String command) {
+            command = command.toLowerCase();
+            if ((command.contains("start") || command.contains("stored") || command.contains("stock") || command.contains("stork"))
+                    && !flag) {
+                tStart = System.currentTimeMillis();
+                alert.dismiss();
+                mySpeechRecognizer.stopListening();
+                flag = true;
+                alertRecording = new AlertDialog.Builder(this);
+                alertRecording.setTitle("Recording...");
+                alertRecording.setMessage("Say Stop to stop recording");
+                alert = alertRecording.create();
+                alert.show();
+                mySpeechRecognizer.startListening(intent);
+                record();
+            }
 
-        if(command.indexOf("stop") != -1 && flag == true){
-            mSensorThread.quitSafely();
-            sensorManager.unregisterListener(this);
-            mySpeechRecognizer.stopListening();
-            alert.dismiss();
-            flag = false;
-            alertDone = new AlertDialog.Builder(this);
-            alertDone.setTitle("Done");
-            alertDone.setMessage("Your record has been saved");
-            alertDone.show();
-            speak("Your record has been saved");
-            writeHelper();
-            //span_Exclusive spans cannot have a zero length
+            if (command.contains("stop") && flag) {
+                mSensorThread.quitSafely();
+                sensorManager.unregisterListener(this);
+                mySpeechRecognizer.stopListening();
+                alert.dismiss();
+                flag = false;
+                /*alertDone = new AlertDialog.Builder(this);
+                alertDone.setTitle("Done");
+                alertDone.setMessage("Your record has been saved");
+                alertDone.show();*/
+               //speak("Your record has been saved");
+                //listen();
+                if(sofar<trials) {
+                    Log.d(TAG, "processResults: " + sofar);
+                    alertDialog2();
+                    sofar++;
+                }
+                writeHelper();
 
+            }
         }
-    }
 
     private void writeHelper() {
         String aData="0";
@@ -302,7 +300,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         alertAdd.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
-                alertDialog2();
+
+                    alertDialog2();
                 return;
             }
         });
@@ -316,11 +315,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
     private void alertDialog2() {
-        alertStart.setTitle("Start");
-        alertStart.setMessage("Say Start to begin recording the gesture");
-        alert = alertStart.create();
-        listen();
-        alert.show();
+
+            alertStart.setTitle("Start");
+            alertStart.setMessage("Say Start to begin recording the gesture");
+            alert = alertStart.create();
+            alert.show();
+            mySpeechRecognizer.stopListening();
+            mySpeechRecognizer.startListening(intent);
     }
 
     public void listen(){
@@ -392,16 +393,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
             File file = new File(dir, fileName);
             FileOutputStream f = new FileOutputStream(file,true);
-
-            /*svm.scale(sdCard.getAbsolutePath() +  "/Gestures/acc.data", sdCard.getAbsolutePath() + "/Gestures/heart_scale_scaled");
-            Log.d(TAG, "cWriter: scaled");
-            svm.train("-t 2 "*//* svm kernel *//* + sdCard.getAbsolutePath() + "/Gestures/heart_scale_scaled " + sdCard.getAbsolutePath() + "/Gestures/modelsvm");
-            Log.d(TAG, "cWriter: trained");
-            svm.predict(sdCard.getAbsolutePath() + "/Gestures/acc.data " + sdCard.getAbsolutePath() + "/Gestures/modelsvm" + sdCard.getAbsolutePath() + "/Gestures/resultsvm");
-            Log.d(TAG, "cWriter: predicted");*/
-
-
-
             try {
                 f.write(entry.getBytes());
                 f.flush();
@@ -414,8 +405,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             e.printStackTrace();
 
         }
-        //svmTest();
-    }
+     }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
@@ -429,9 +419,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
     public void add(View view) {
-        svmTest();
-        /*alertAdd = new AlertDialog.Builder(this);
-        alertDialog();*/
+        alertAdd = new AlertDialog.Builder(this);
+        alertDialog();
+     /*svmTest();*/
     }
 
     protected void onDestroy(){
@@ -442,6 +432,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public void test(View view) {
         alertStart = new AlertDialog.Builder(this);
         alertDialog2();
+
     }
 
     private void svmTest() {
